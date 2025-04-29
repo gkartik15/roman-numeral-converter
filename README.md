@@ -38,19 +38,19 @@ A full-stack application that converts numbers to Roman numerals. The applicatio
   - Easy integration with other tools and services
   - Perfect for structured logging in production environments
 
-#### Metrics: Prometheus Client
-- **Prometheus Client**:
-  - Standard metrics format for monitoring
-  - Support for custom metrics and labels
-  - Efficient metric collection and export
-  - Perfect for monitoring application performance and health
+#### Metrics: Prometheus
+- **Prometheus**:
+  - Open-source monitoring and alerting system
+  - Time-series database for metrics
+  - Powerful query language (PromQL)
+  - Service discovery and target scraping
+  - Perfect for monitoring application performance
 
-#### Tracing: OpenTelemetry Collector
-- **OpenTelemetry Collector**:
-  - Standardized observability framework
-  - Support for distributed tracing
-  - Easy integration with various backends
-  - Automatic instrumentation capabilities
+#### Tracing: Jaeger
+- **Jaeger**:
+  - Open-source distributed tracing system
+  - Support for OpenTelemetry
+  - Real-time monitoring and debugging
   - Perfect for understanding request flow and performance bottlenecks
 
 ### Containerization: Docker
@@ -68,9 +68,9 @@ A full-stack application that converts numbers to Roman numerals. The applicatio
 - Convert numbers between 1 and 3999 to Roman numerals
 - Modern, responsive UI with real-time conversion
 - Comprehensive observability:
-  - Metrics collection and monitoring
-  - Distributed tracing
-  - Structured logging
+  - Metrics collection and monitoring with Prometheus
+  - Distributed tracing with Jaeger
+  - Structured logging with Winston
 - Error handling and input validation
 - CORS support for frontend-backend communication
 - Docker support for development and production environments
@@ -81,20 +81,28 @@ A full-stack application that converts numbers to Roman numerals. The applicatio
 roman-numeral-converter/
 ├── frontend/           # React frontend application
 │   ├── public/        # Static files
-│   └── src/           # React source code
-└── backend/           # Node.js/Express backend
-    ├── observability/ # Logging, metrics, and tracing
-    └── server.ts      # Main server file
+│   ├── src/           # React source code
+│   ├── nginx.conf     # Nginx configuration
+│   └── Dockerfile     # Frontend Docker configuration
+├── backend/           # Node.js/Express backend
+│   ├── observability/ # Logging, metrics, and tracing
+│   ├── server.ts      # Main server file
+│   └── Dockerfile     # Backend Docker configuration
+├── config/            # Configuration files
+│   └── prometheus.yml # Prometheus configuration
+├── logs/              # Application logs
+│   └── otel/          # OpenTelemetry logs
+└── docker-compose.yml # Docker Compose configuration
 ```
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- npm or yarn
+- Docker and Docker Compose
+- Node.js (v14 or higher) and npm (for local development)
 
 ## Installation
 
-### Local Development
+### Docker Deployment (Recommended)
 
 1. Clone the repository:
    ```bash
@@ -102,31 +110,45 @@ roman-numeral-converter/
    cd roman-numeral-converter
    ```
 
-2. Install frontend dependencies:
+2. Build and start the containers:
    ```bash
-   cd frontend
-   npm install
-   ```
-
-3. Install backend dependencies:
-   ```bash
-   cd ../backend
-   npm install
-   ```
-
-### Docker Deployment
-
-1. Build and start the containers:
-   ```bash
-   docker compose build
+   docker compose up --build
    ```
 
    This will:
    - Build the frontend and backend images
    - Set up the network between services
    - Mount necessary volumes
+   - Start all services (frontend, backend, Jaeger, Prometheus)
+
+### Local Development
+
+1. Install frontend dependencies:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. Install backend dependencies:
+   ```bash
+   cd ../backend
+   npm install
+   ```
 
 ## Running the Application
+
+### Docker Environment (Recommended)
+
+1. Development mode:
+   ```bash
+   docker compose up
+   ```
+
+   Services will be available at:
+   - Frontend: http://localhost:3000
+   - Backend: http://localhost:8080
+   - Jaeger UI: http://localhost:16686
+   - Prometheus: http://localhost:9090
 
 ### Local Development
 
@@ -143,18 +165,6 @@ roman-numeral-converter/
    npm start
    ```
    The frontend will be available at http://localhost:3000
-
-### Docker Environment
-
-1. Development mode:
-   ```bash
-   docker compose frontend-dev backend-dev up
-   ```
-
-2. Production mode:
-   ```bash
-   dockercompose frontend-prod backend-prod up
-   ```
 
 ## API Endpoints
 
@@ -178,16 +188,18 @@ The application includes comprehensive observability features:
 - Structured logging with timestamps and metadata
 - Separate files for error logs and application logs
 
-### Metrics
+### Metrics (Prometheus)
 - HTTP request counts
 - Response times
 - Error rates
 - Available at `/metrics` endpoint
+- Scraped by Prometheus every 15 seconds
 
-### Tracing
-- Distributed tracing with OpenTelemetry
-- Console span exporter for development
+### Tracing (Jaeger)
+- Distributed tracing with OpenTelemetry and Jaeger
 - Automatic instrumentation of Express routes
+- Trace visualization in Jaeger UI
+- Service dependency analysis
 
 ## Error Handling
 
@@ -200,7 +212,7 @@ The application includes comprehensive observability features:
 
 ### Frontend
 - Built with React and TypeScript
-- Responsive design
+- Responsive design with Adobe React Spectrum
 - Real-time conversion
 - Error handling and validation
 
@@ -211,11 +223,11 @@ The application includes comprehensive observability features:
 - RESTful API design
 
 ### Docker Development
-- Hot-reloading in development
+- Multi-stage builds for optimized images
 - Volume mounting for source code
-- Environment-specific Compose files
 - Health checks for services
 - Network isolation
+- Environment-specific configurations
 
 ## Contributing
 
