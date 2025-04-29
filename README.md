@@ -41,7 +41,6 @@ A full-stack application that converts numbers to Roman numerals. The applicatio
 #### Metrics: Prometheus Client
 - **Prometheus Client**:
   - Standard metrics format for monitoring
-  - Easy integration with Prometheus monitoring system
   - Support for custom metrics and labels
   - Efficient metric collection and export
   - Perfect for monitoring application performance and health
@@ -62,6 +61,7 @@ A full-stack application that converts numbers to Roman numerals. The applicatio
   - Health checks and dependency management
   - Volume mounting for configuration and logs
   - Multi-stage builds for optimized images
+  - Environment-specific configurations
 
 ## Features
 
@@ -73,6 +73,7 @@ A full-stack application that converts numbers to Roman numerals. The applicatio
   - Structured logging
 - Error handling and input validation
 - CORS support for frontend-backend communication
+- Docker support for development and production environments
 
 ## Project Structure
 
@@ -93,6 +94,8 @@ roman-numeral-converter/
 
 ## Installation
 
+### Local Development
+
 1. Clone the repository:
    ```bash
    git clone <repository-url>
@@ -111,12 +114,26 @@ roman-numeral-converter/
    npm install
    ```
 
+### Docker Deployment
+
+1. Build and start the containers:
+   ```bash
+   docker compose build
+   ```
+
+   This will:
+   - Build the frontend and backend images
+   - Set up the network between services
+   - Mount necessary volumes
+
 ## Running the Application
+
+### Local Development
 
 1. Start the backend server:
    ```bash
    cd backend
-   npm start
+   npm run dev
    ```
    The backend server will run on http://localhost:8080
 
@@ -126,6 +143,18 @@ roman-numeral-converter/
    npm start
    ```
    The frontend will be available at http://localhost:3000
+
+### Docker Environment
+
+1. Development mode:
+   ```bash
+   docker compose frontend-dev backend-dev up
+   ```
+
+2. Production mode:
+   ```bash
+   dockercompose frontend-prod backend-prod up
+   ```
 
 ## API Endpoints
 
@@ -180,6 +209,13 @@ The application includes comprehensive observability features:
 - TypeScript for type safety
 - Comprehensive observability
 - RESTful API design
+
+### Docker Development
+- Hot-reloading in development
+- Volume mounting for source code
+- Environment-specific Compose files
+- Health checks for services
+- Network isolation
 
 ## Contributing
 

@@ -110,6 +110,9 @@ app.get('/romannumeral', (req: Request, res: Response): Response => {
     { value: 1, numeral: 'I' }
   ];
   
+  // Roman numeral conversion follows the standard described in
+  // https://en.wikipedia.org/wiki/Roman_numerals
+  // Supports numbers between 1 and 3999 inclusive.
   function toRoman(num: number): string {
     let result = '';
     for (const { value, numeral } of romanMap) {
