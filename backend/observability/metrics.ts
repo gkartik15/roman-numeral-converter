@@ -1,35 +1,51 @@
+/**
+ * Prometheus metrics configuration for the Roman Numeral Converter.
+ * This file sets up metrics collection for HTTP requests, response times,
+ * and error rates using the prom-client library.
+ */
+
 import client from 'prom-client';
 import { Request, Response } from 'express';
 
+// Initialize default metrics collection
 const collectDefaultMetrics = client.collectDefaultMetrics;
 
-// Probe every 5 seconds
+// Configure default metrics collection interval (5 seconds)
 collectDefaultMetrics();
 
-// Request Counter
-export const httpRequestCounter = new client.Counter({
+/**
+ * HTTP request counter metric.
+ * Tracks the total number of HTTP requests by method, route, and status code.
+ */
+const httpRequestCounter = new client.Counter({
   name: 'http_requests_total',
   help: 'Total number of HTTP requests',
   labelNames: ['method', 'route', 'status_code']
 });
 
-// Response Time Histogram
-export const httpResponseTime = new client.Histogram({
-  name: 'http_request_duration_seconds',
-  help: 'HTTP request duration in seconds',
+/**
+ * HTTP response time histogram.
+ * Measures the duration of HTTP requests in seconds.
+ */
+const httpResponseTime = new client.Histogram({
+  name: 'http_response_time_seconds',
+  help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'route', 'status_code'],
   buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10] // buckets in seconds
 });
 
-// Error Counter
-export const httpErrorCounter = new client.Counter({
-    name: 'http_errors_total',
-    help: 'Total number of HTTP errors',
-    labelNames: ['method', 'route', 'status_code', 'error_type']
-  });
+/**
+ * HTTP error counter metric.
+ * Tracks the number of HTTP errors by method, route, status code, and error type.
+ */
+const httpErrorCounter = new client.Counter({
+  name: 'http_errors_total',
+  help: 'Total number of HTTP errors',
+  labelNames: ['method', 'route', 'status_code', 'error_type']
+});
 
-  // Memory Usage
-export const processMemoryUsage = new client.Gauge({
+// Memory Usage
+const processMemoryUsage = new client.Gauge({
     name: 'process_memory_usage_bytes',
     help: 'Process memory usage in bytes',
     labelNames: ['type']
@@ -46,6 +62,14 @@ function updateMemoryMetrics() {
 // Update memory metrics every 30 seconds
 setInterval(updateMemoryMetrics, 30000);
 
+/**
+ * Express middleware for collecting HTTP metrics.
+ * Records request counts, response times, and errors.
+ * 
+ * @param {Request} req - Express request object
+ * @param {Response} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 export function metricsMiddleware(req: Request, res: Response, next: Function) {
     const route = req.path;
     const method = req.method;
@@ -53,8 +77,7 @@ export function metricsMiddleware(req: Request, res: Response, next: Function) {
   
     // Record response time and update metrics on response finish
     res.on('finish', () => {
-  
-      // Calculate response time
+      // Calculate response time in seconds
       const [seconds, nanoseconds] = process.hrtime(startTime);
       const duration = seconds + nanoseconds / 1e9;
   
@@ -71,6 +94,10 @@ export function metricsMiddleware(req: Request, res: Response, next: Function) {
     next();
   }
 
+/**
+ * Prometheus metrics endpoint handler.
+ * Returns metrics in Prometheus format.
+ */
 export async function metricsEndpoint(req: any, res: any) {
     try {
         const format = req.query.format === 'pretty' ? 'pretty' : 'prometheus';

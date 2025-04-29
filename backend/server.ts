@@ -1,4 +1,10 @@
-// Initialize OpenTelemetry first
+/**
+ * Main server file for the Roman Numeral Converter backend.
+ * This file sets up the Express server with observability features,
+ * including logging, metrics, and tracing.
+ */
+
+// Initialize OpenTelemetry first to ensure proper tracing setup
 import { startTracing } from './observability/tracer';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
@@ -7,14 +13,22 @@ import winston from 'winston';
 import 'winston-daily-rotate-file';
 import path from 'path';
 
+// Create Express application instance
 const app = express();
+
+// Server configuration
 const PORT = 8080;
 const ENV = 'development';
 
-// Start tracing
+// Start OpenTelemetry tracing
 startTracing();
 
-// Configure logger
+/**
+ * Configure Winston logger with multiple transports:
+ * - Console for immediate feedback
+ * - Daily rotating files for error logs
+ * - Daily rotating files for application logs
+ */
 const logger = winston.createLogger({
   level: ENV === 'development' ? 'debug' : 'info',
   format: winston.format.combine(
@@ -43,7 +57,10 @@ const logger = winston.createLogger({
   ]
 });
 
-// Error handling middleware
+/**
+ * Global error handling middleware.
+ * Catches any unhandled errors in the application and logs them.
+ */
 app.use((err: Error, req: Request, res: Response, next: Function) => {
   logger.error('Unhandled error occurred', {
     error: err.message,
@@ -54,7 +71,11 @@ app.use((err: Error, req: Request, res: Response, next: Function) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// CORS configuration based on environment
+/**
+ * CORS configuration based on environment.
+ * In development, allows requests from localhost:3000.
+ * In production, should be updated with the actual frontend domain.
+ */
 const corsOptions = {
     origin: ENV === 'development' 
       ? ['http://localhost:3000']
@@ -63,13 +84,17 @@ const corsOptions = {
     optionsSuccessStatus: 200
   };
 
-// Allow frontend CORS
+// Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Add metrics middleware
+// Add Prometheus metrics middleware
 app.use(metricsMiddleware);
 
-// Health check endpoint
+/**
+ * Health check endpoint.
+ * Used by Docker health checks and monitoring systems.
+ * Returns service status, environment, and timestamp.
+ */
 app.get('/health', (req: Request, res: Response) => {
     res.status(200).json({ 
       status: 'healthy',
@@ -78,10 +103,17 @@ app.get('/health', (req: Request, res: Response) => {
     });
   });
 
-// Metrics endpoint
+// Expose Prometheus metrics endpoint
 app.get('/metrics', metricsEndpoint);
 
-// Main endpoint
+/**
+ * Main Roman numeral conversion endpoint.
+ * Converts a number between 1 and 3999 to its Roman numeral representation.
+ * 
+ * @param {string} query - The number to convert (must be between 1 and 3999)
+ * @returns {Object} JSON response with input and output
+ * @throws {Error} If input is invalid or out of range
+ */
 app.get('/romannumeral', (req: Request, res: Response): Response => {
   const query = req.query.query as string;
   
@@ -94,6 +126,11 @@ app.get('/romannumeral', (req: Request, res: Response): Response => {
 
   const num = parseInt(query, 10);
 
+  /**
+   * Roman numeral mapping.
+   * Each entry represents a value and its corresponding Roman numeral.
+   * The array is ordered from highest to lowest value to ensure proper conversion.
+   */
   const romanMap: { value: number; numeral: string }[] = [
     { value: 1000, numeral: 'M' },
     { value: 900, numeral: 'CM' },
@@ -110,9 +147,14 @@ app.get('/romannumeral', (req: Request, res: Response): Response => {
     { value: 1, numeral: 'I' }
   ];
   
-  // Roman numeral conversion follows the standard described in
-  // https://en.wikipedia.org/wiki/Roman_numerals
-  // Supports numbers between 1 and 3999 inclusive.
+  /**
+   * Converts a number to its Roman numeral representation.
+   * Follows the standard described in https://en.wikipedia.org/wiki/Roman_numerals
+   * Supports numbers between 1 and 3999 inclusive.
+   * 
+   * @param {number} num - The number to convert
+   * @returns {string} The Roman numeral representation
+   */
   function toRoman(num: number): string {
     let result = '';
     for (const { value, numeral } of romanMap) {
@@ -148,7 +190,7 @@ app.get('/romannumeral', (req: Request, res: Response): Response => {
   }
 });
 
-// Start server with environment info
+// Start the server
 app.listen(PORT, () => {
   logger.info(`Server running in ${ENV} mode at http://localhost:${PORT}`);
 });

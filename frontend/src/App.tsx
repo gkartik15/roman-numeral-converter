@@ -1,13 +1,31 @@
+/**
+ * Main App component for the Roman Numeral Converter frontend.
+ * This component provides a user interface for converting numbers to Roman numerals,
+ * with real-time validation and error handling.
+ */
+
 import React, { useState, useEffect } from "react";
 import { Provider, defaultTheme, Button, TextField, View, Text, Heading, Flex, ToggleButton } from "@adobe/react-spectrum";
 
+/**
+ * Main App component that handles:
+ * - Number input and validation
+ * - Roman numeral conversion
+ * - Dark mode support
+ * - Error handling and display
+ */
 function App() {
+  // State management
   const [number, setNumber] = useState<string>('');
   const [roman, setRoman] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [isDark, setIsDark] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
+  /**
+   * Sets up dark mode based on system preferences.
+   * Listens for changes in system color scheme.
+   */
   useEffect(() => {
     const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     setIsDark(darkModeMediaQuery.matches);
@@ -20,6 +38,14 @@ function App() {
     return () => darkModeMediaQuery.removeEventListener('change', handleChange);
   }, []);
 
+  /**
+   * Handles number input changes and validation.
+   * Validates that the input:
+   * - Contains only digits
+   * - Is between 1 and 3999
+   * 
+   * @param {string} value - The input value to validate
+   */
   function handleNumberChange(value: string) {
     setNumber(value);
     setError('');
@@ -40,6 +66,10 @@ function App() {
     }
   }
 
+  /**
+   * Converts the input number to a Roman numeral.
+   * Makes an API call to the backend service and handles the response.
+   */
   async function convertNumber() {
     if (!number || error) return;
     setLoading(true);
