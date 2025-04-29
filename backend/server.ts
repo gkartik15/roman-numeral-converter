@@ -9,7 +9,7 @@ import path from 'path';
 
 const app = express();
 const PORT = 8080;
-const ENV = process.env.NODE_ENV || 'development';
+const ENV = 'development';
 
 // Start tracing
 startTracing();
@@ -151,14 +151,4 @@ app.get('/romannumeral', (req: Request, res: Response): Response => {
 // Start server with environment info
 app.listen(PORT, () => {
   logger.info(`Server running in ${ENV} mode at http://localhost:${PORT}`);
-  logger.info('Available endpoints:', {
-    health: `http://localhost:${PORT}/health`,
-    metrics: `http://localhost:${PORT}/metrics`,
-    info: `http://localhost:${PORT}/info`,
-    romanNumeral: `http://localhost:${PORT}/romannumeral?query=<number>`,
-    ...(ENV === 'development' ? {
-    debug: `http://localhost:${PORT}/debug`,
-    logs: `http://localhost:${PORT}/logs`
-    } : {})
-  });
 });

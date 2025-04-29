@@ -4,7 +4,7 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Add build arguments
-ARG NODE_ENV=production
+ARG NODE_ENV=development
 ENV NODE_ENV=$NODE_ENV
 
 COPY package*.json ./
@@ -30,10 +30,10 @@ RUN mkdir -p /app/logs && \
     chmod 777 /app/logs
 
 # Add environment argument
-ARG NODE_ENV=production
+ARG NODE_ENV=development
 ENV NODE_ENV=$NODE_ENV
 
-RUN npm ci --only=production
+RUN npm ci
 
 EXPOSE 8080
 

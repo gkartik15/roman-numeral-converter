@@ -1,27 +1,48 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
-import logger from './logger';
+import { logger } from './logger';
+import { diag } from '@opentelemetry/api';
+import { DiagLogLevel } from '@opentelemetry/api';
 
-diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
+// Set OpenTelemetry to only log errors
+const otelLogger = {
+  error(message: string) {
+    // Write to a separate file for OpenTelemetry errors
+    logger.error(`[OpenTelemetry] ${message}`, { component: 'opentelemetry' });
+  },
+  warn(message: string) {
+    // Only log warnings if really needed
+    if (process.env.LOG_LEVEL === 'debug') {
+      logger.warn(`[OpenTelemetry] ${message}`, { component: 'opentelemetry' });
+    }
+  },
+  info() {}, // Don't log info messages
+  debug() {}, // Don't log debug messages
+  verbose() {}, // Don't log verbose messages
+};
 
-const otlpExporter = new OTLPTraceExporter({
-  url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
+// Configure the OpenTelemetry diagnostic logger
+diag.setLogger(otelLogger, DiagLogLevel.ERROR);
+
+const jaegerExporter = new JaegerExporter({
+  endpoint: process.env.JAEGER_ENDPOINT || 'http://jaeger:14268/api/traces',
+  host: process.env.JAEGER_AGENT_HOST || 'jaeger',
+  port: parseInt(process.env.JAEGER_AGENT_PORT || '6831', 10),
 });
 
 const resource = resourceFromAttributes({
-  'service.name': process.env.OTEL_SERVICE_NAME || 'roman-numeral-service',
+  'service.name': process.env.JAEGER_SERVICE_NAME || 'roman-numeral-service',
   'service.version': '1.0.0',
   'deployment.environment': process.env.NODE_ENV || 'development',
 });
 
 const sdk = new NodeSDK({
   resource,
-  spanProcessor: new SimpleSpanProcessor(otlpExporter),
+  spanProcessor: new SimpleSpanProcessor(jaegerExporter),
   instrumentations: [
     new ExpressInstrumentation({
         requestHook: (span, request: any) => {
@@ -42,20 +63,28 @@ const sdk = new NodeSDK({
 export async function startTracing(): Promise<void> {
   try {
     await sdk.start();
-    logger.info('Tracing initialized with OLTP exporter', {
-      endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
-      serviceName: process.env.OTEL_SERVICE_NAME,
+    logger.info('Tracing initialized with Jaeger exporter', {
+      component: 'opentelemetry',
+      agentHost: process.env.JAEGER_AGENT_HOST,
+      agentPort: process.env.JAEGER_AGENT_PORT,
+      serviceName: process.env.JAEGER_SERVICE_NAME,
     });
   } catch (error: unknown) {
-    logger.error('Error initializing tracing', { error });
+    logger.error('Error initializing tracing', { 
+      component: 'opentelemetry',
+      error 
+    });
   }
 }
 
 export async function shutdownTracing(): Promise<void> {
   try {
     await sdk.shutdown();
-    logger.info('Tracing shutdown completed');
+    logger.info('Tracing shutdown completed', { component: 'opentelemetry' });
   } catch (error: unknown) {
-    logger.error('Error shutting down tracing', { error });
+    logger.error('Error shutting down tracing', { 
+      component: 'opentelemetry',
+      error 
+    });
   }
 }
