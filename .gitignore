@@ -32,3 +32,5 @@ coverage/
 # env
 frontend/.env.development
 frontend/.env.production
+
+frontend/node_modules
