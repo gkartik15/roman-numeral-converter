@@ -1,0 +1,129 @@
+services:
+
+  # Add OpenTelemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    command: ["--config=/etc/otel/otel-collector-config.yaml"]
+    volumes:
+      - ./config:/etc/otel
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # Prometheus metrics
+      - "13133:13133" # Health check
+      - "1777:1777"   # pprof extension
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:13133/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./config:/etc/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+    depends_on:
+      otel-collector:
+        condition: service_healthy
+  # Development backend
+  backend-dev:
+    build: 
+      context: ./backend
+      args:
+        - NODE_ENV=development
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces
+      - OTEL_SERVICE_NAME=roman-numeral-service-dev
+    depends_on:
+      otel-collector:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    volumes:
+      - ./backend/logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Production backend
+  backend-prod:
+    build: 
+      context: ./backend
+      args:
+        - NODE_ENV=production
+    ports:
+      - "8081:8080"
+    networks:
+      - app-network
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces
+      - OTEL_SERVICE_NAME=roman-numeral-service-prod
+    depends_on:
+      otel-collector:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Development frontend
+  frontend-dev:
+    build: 
+      context: ./frontend
+      args:
+        - NODE_ENV=development
+    ports:
+      - "3000:80"  # Changed to 80 since we're using nginx
+    environment:
+      - REACT_APP_BACKEND_URL=http://backend-dev:8080
+    networks:
+      - app-network
+    depends_on:
+      backend-dev:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Production frontend
+  frontend-prod:
+    build: 
+      context: ./frontend
+      args:
+        - NODE_ENV=production
+    ports:
+      - "80:80"
+    environment:
+      - REACT_APP_BACKEND_URL=http://backend-prod:8080
+    networks:
+      - app-network
+    depends_on:
+      backend-prod:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
